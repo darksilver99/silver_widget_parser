@@ -3,9 +3,6 @@ import 'package:flutter/material.dart';
 import 'dart:io' show HttpClient;
 import 'package:silver_printer/silver_printer.dart';
 
-// Export classes เพื่อให้ user ไม่ต้อง import silver_printer เพิ่ม
-export 'package:silver_printer/silver_printer.dart' show PrintItem, TextSize, TextAlignment;
-
 /// Main parser class for converting Flutter widgets to PrintItems
 class SilverWidgetParser {
   /// Parse a Flutter widget into a list of PrintItems
