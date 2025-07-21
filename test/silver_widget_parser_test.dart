@@ -183,13 +183,9 @@ void main() {
     
     test('creates ImagePrintItem correctly', () {
       final imageBytes = Uint8List.fromList([1, 2, 3, 4]);
-      final imageItem = PrintItem.image(
-        imageBytes,
-        width: 200,
-      ) as ImagePrintItem;
+      final imageItem = PrintItem.image(imageBytes) as ImagePrintItem;
       
       expect(imageItem.imageBytes, imageBytes);
-      expect(imageItem.width, 200);
     });
     
     test('creates LineFeedPrintItem correctly', () {

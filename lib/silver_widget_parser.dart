@@ -1,34 +1,28 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'dart:io' show HttpClient;
-import 'dart:convert';
 
-/// Text size options for PrintItem
+// Mock classes to match silver_printer API structure
 enum TextSize { small, normal, large, extraLarge }
-
-/// Text alignment options for PrintItem
 enum TextAlignment { left, center, right }
 
-/// Base class for print items
+/// Base class for print items (matching silver_printer structure)
 abstract class PrintItem {
   const PrintItem();
   
   /// Create a text print item
   factory PrintItem.text(
     String content, {
-    TextSize size,
-    bool bold,
-    TextAlignment alignment,
+    TextSize? size,
+    bool? bold,
+    TextAlignment? alignment,
   }) = TextPrintItem;
   
-  /// Create an image print item
-  factory PrintItem.image(
-    Uint8List imageBytes, {
-    int? width,
-  }) = ImagePrintItem;
+  /// Create an image print item  
+  factory PrintItem.image(Uint8List imageBytes) = ImagePrintItem;
   
   /// Create a line feed print item
-  factory PrintItem.lineFeed([int lines]) = LineFeedPrintItem;
+  factory PrintItem.lineFeed([int? lines]) = LineFeedPrintItem;
 }
 
 /// Text print item
@@ -40,25 +34,26 @@ class TextPrintItem extends PrintItem {
   
   const TextPrintItem(
     this.content, {
-    this.size = TextSize.normal,
-    this.bold = false,
-    this.alignment = TextAlignment.left,
-  });
+    TextSize? size,
+    bool? bold,
+    TextAlignment? alignment,
+  }) : size = size ?? TextSize.normal,
+       bold = bold ?? false,
+       alignment = alignment ?? TextAlignment.left;
 }
 
 /// Image print item
 class ImagePrintItem extends PrintItem {
   final Uint8List imageBytes;
-  final int? width;
   
-  const ImagePrintItem(this.imageBytes, {this.width});
+  const ImagePrintItem(this.imageBytes);
 }
 
 /// Line feed print item
 class LineFeedPrintItem extends PrintItem {
   final int lines;
   
-  const LineFeedPrintItem([this.lines = 1]);
+  const LineFeedPrintItem([int? lines]) : lines = lines ?? 1;
 }
 
 /// Main parser class for converting Flutter widgets to PrintItems
@@ -119,10 +114,7 @@ class SilverWidgetParser {
       final networkImage = widget.image as NetworkImage;
       try {
         final imageBytes = await _downloadImage(networkImage.url);
-        return PrintItem.image(
-          imageBytes,
-          width: widget.width?.toInt(),
-        );
+        return PrintItem.image(imageBytes);
       } catch (e) {
         // Return null if image download fails
         return null;
