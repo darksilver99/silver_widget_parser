@@ -1,60 +1,10 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'dart:io' show HttpClient;
+import 'package:silver_printer/silver_printer.dart';
 
-// Mock classes to match silver_printer API structure
-enum TextSize { small, normal, large, extraLarge }
-enum TextAlignment { left, center, right }
-
-/// Base class for print items (matching silver_printer structure)
-abstract class PrintItem {
-  const PrintItem();
-  
-  /// Create a text print item
-  factory PrintItem.text(
-    String content, {
-    TextSize? size,
-    bool? bold,
-    TextAlignment? alignment,
-  }) = TextPrintItem;
-  
-  /// Create an image print item  
-  factory PrintItem.image(Uint8List imageBytes) = ImagePrintItem;
-  
-  /// Create a line feed print item
-  factory PrintItem.lineFeed([int? lines]) = LineFeedPrintItem;
-}
-
-/// Text print item
-class TextPrintItem extends PrintItem {
-  final String content;
-  final TextSize size;
-  final bool bold;
-  final TextAlignment alignment;
-  
-  const TextPrintItem(
-    this.content, {
-    TextSize? size,
-    bool? bold,
-    TextAlignment? alignment,
-  }) : size = size ?? TextSize.normal,
-       bold = bold ?? false,
-       alignment = alignment ?? TextAlignment.left;
-}
-
-/// Image print item
-class ImagePrintItem extends PrintItem {
-  final Uint8List imageBytes;
-  
-  const ImagePrintItem(this.imageBytes);
-}
-
-/// Line feed print item
-class LineFeedPrintItem extends PrintItem {
-  final int lines;
-  
-  const LineFeedPrintItem([int? lines]) : lines = lines ?? 1;
-}
+// Export classes เพื่อให้ user ไม่ต้อง import silver_printer เพิ่ม
+export 'package:silver_printer/silver_printer.dart' show PrintItem, TextSize, TextAlignment;
 
 /// Main parser class for converting Flutter widgets to PrintItems
 class SilverWidgetParser {
@@ -96,7 +46,7 @@ class SilverWidgetParser {
     return items;
   }
   
-  /// Parse Text widget to TextPrintItem
+  /// Parse Text widget to PrintItem
   PrintItem _parseTextWidget(Text widget) {
     final style = widget.style ?? const TextStyle();
     
@@ -108,7 +58,7 @@ class SilverWidgetParser {
     );
   }
   
-  /// Parse Image widget to ImagePrintItem
+  /// Parse Image widget to PrintItem
   Future<PrintItem?> _parseImageWidget(Image widget) async {
     if (widget.image is NetworkImage) {
       final networkImage = widget.image as NetworkImage;
