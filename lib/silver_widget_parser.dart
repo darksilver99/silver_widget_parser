@@ -1,5 +1,180 @@
-/// A Calculator.
-class Calculator {
-  /// Returns [value] plus 1.
-  int addOne(int value) => value + 1;
+import 'dart:typed_data';
+import 'package:flutter/material.dart';
+import 'dart:io' show HttpClient;
+import 'dart:convert';
+
+/// Text size options for PrintItem
+enum TextSize { small, normal, large, extraLarge }
+
+/// Text alignment options for PrintItem
+enum TextAlignment { left, center, right }
+
+/// Base class for print items
+abstract class PrintItem {
+  const PrintItem();
+  
+  /// Create a text print item
+  factory PrintItem.text(
+    String content, {
+    TextSize size,
+    bool bold,
+    TextAlignment alignment,
+  }) = TextPrintItem;
+  
+  /// Create an image print item
+  factory PrintItem.image(
+    Uint8List imageBytes, {
+    int? width,
+  }) = ImagePrintItem;
+  
+  /// Create a line feed print item
+  factory PrintItem.lineFeed([int lines]) = LineFeedPrintItem;
+}
+
+/// Text print item
+class TextPrintItem extends PrintItem {
+  final String content;
+  final TextSize size;
+  final bool bold;
+  final TextAlignment alignment;
+  
+  const TextPrintItem(
+    this.content, {
+    this.size = TextSize.normal,
+    this.bold = false,
+    this.alignment = TextAlignment.left,
+  });
+}
+
+/// Image print item
+class ImagePrintItem extends PrintItem {
+  final Uint8List imageBytes;
+  final int? width;
+  
+  const ImagePrintItem(this.imageBytes, {this.width});
+}
+
+/// Line feed print item
+class LineFeedPrintItem extends PrintItem {
+  final int lines;
+  
+  const LineFeedPrintItem([this.lines = 1]);
+}
+
+/// Main parser class for converting Flutter widgets to PrintItems
+class SilverWidgetParser {
+  /// Parse a Flutter widget into a list of PrintItems
+  static Future<List<PrintItem>> parseWidget(Widget widget) async {
+    final parser = SilverWidgetParser._();
+    return await parser._parseWidgetRecursive(widget);
+  }
+  
+  SilverWidgetParser._();
+  
+  /// Recursively parse widget tree
+  Future<List<PrintItem>> _parseWidgetRecursive(Widget widget) async {
+    final items = <PrintItem>[];
+    
+    if (widget is Text) {
+      items.add(_parseTextWidget(widget));
+    } else if (widget is Image) {
+      final imageItem = await _parseImageWidget(widget);
+      if (imageItem != null) items.add(imageItem);
+    } else if (widget is Container) {
+      if (widget.child != null) {
+        items.addAll(await _parseWidgetRecursive(widget.child!));
+      }
+    } else if (widget is Column) {
+      for (final child in widget.children) {
+        items.addAll(await _parseWidgetRecursive(child));
+      }
+    } else if (widget is Row) {
+      for (final child in widget.children) {
+        items.addAll(await _parseWidgetRecursive(child));
+      }
+    } else if (widget is Padding) {
+      if (widget.child != null) {
+        items.addAll(await _parseWidgetRecursive(widget.child!));
+      }
+    }
+    
+    return items;
+  }
+  
+  /// Parse Text widget to TextPrintItem
+  PrintItem _parseTextWidget(Text widget) {
+    final style = widget.style ?? const TextStyle();
+    
+    return PrintItem.text(
+      widget.data ?? '',
+      size: _mapFontSizeToTextSize(style.fontSize),
+      bold: _isBold(style.fontWeight),
+      alignment: _mapTextAlignToAlignment(widget.textAlign),
+    );
+  }
+  
+  /// Parse Image widget to ImagePrintItem
+  Future<PrintItem?> _parseImageWidget(Image widget) async {
+    if (widget.image is NetworkImage) {
+      final networkImage = widget.image as NetworkImage;
+      try {
+        final imageBytes = await _downloadImage(networkImage.url);
+        return PrintItem.image(
+          imageBytes,
+          width: widget.width?.toInt(),
+        );
+      } catch (e) {
+        // Return null if image download fails
+        return null;
+      }
+    }
+    return null;
+  }
+  
+  /// Download image from network URL
+  Future<Uint8List> _downloadImage(String url) async {
+    final client = HttpClient();
+    try {
+      final request = await client.getUrl(Uri.parse(url));
+      final response = await request.close();
+      
+      if (response.statusCode == 200) {
+        final bytes = await response.expand((chunk) => chunk).toList();
+        return Uint8List.fromList(bytes);
+      } else {
+        throw Exception('Failed to download image: ${response.statusCode}');
+      }
+    } finally {
+      client.close();
+    }
+  }
+  
+  /// Map Flutter font size to TextSize enum
+  TextSize _mapFontSizeToTextSize(double? fontSize) {
+    if (fontSize == null) return TextSize.normal;
+    
+    if (fontSize <= 12) return TextSize.small;
+    if (fontSize <= 16) return TextSize.normal;
+    if (fontSize <= 24) return TextSize.large;
+    return TextSize.extraLarge;
+  }
+  
+  /// Check if font weight represents bold
+  bool _isBold(FontWeight? fontWeight) {
+    if (fontWeight == null) return false;
+    return fontWeight.index >= FontWeight.w600.index;
+  }
+  
+  /// Map Flutter TextAlign to TextAlignment enum
+  TextAlignment _mapTextAlignToAlignment(TextAlign? textAlign) {
+    switch (textAlign) {
+      case TextAlign.center:
+        return TextAlignment.center;
+      case TextAlign.right:
+      case TextAlign.end:
+        return TextAlignment.right;
+      default:
+        return TextAlignment.left;
+    }
+  }
 }
