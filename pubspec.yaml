@@ -12,7 +12,9 @@ dependencies:
     sdk: flutter
   silver_printer:
     git:
-      url: https://github.com/darksilver99/silver_printer.git
+      #url: https://github.com/darksilver99/silver_printer.git
+  #silver_printer:
+    #path: /Users/anusornkongthong/development/plugin_project/silver_printer
 
 dev_dependencies:
   flutter_test:
